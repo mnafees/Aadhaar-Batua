@@ -24,7 +24,8 @@ import java.nio.charset.StandardCharsets;
 public class MainActivity extends AppCompatActivity {
 
     private Handler mHandler;
-    private TextView mTextView;
+    private TextView mName;
+    private TextView mUid;
     private boolean mQrCodeScanned;
 
     @Override
@@ -33,7 +34,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mHandler = new Handler(getMainLooper());
-        mTextView = (TextView)findViewById(R.id.text_view);
+        mName = (TextView) findViewById(R.id.name);
+        mUid  = (TextView) findViewById(R.id.uid);
 
         IntentIntegrator intentIntegrator = new IntentIntegrator(this);
         intentIntegrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE_TYPES);
@@ -67,7 +69,8 @@ public class MainActivity extends AppCompatActivity {
                 String subdist = parser.getAttributeValue(null, "subdist");
                 String state = parser.getAttributeValue(null, "state");
                 String pc = parser.getAttributeValue(null, "pc");
-                mTextView.setText(name);
+                mName.setText(name);
+                mUid.setText(uid);
             } catch(XmlPullParserException xppe) {
                 throw new IllegalStateException(xppe);
             } catch (IOException ioe) {
