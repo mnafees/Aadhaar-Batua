@@ -13,6 +13,7 @@ public class AccountActivity extends AppCompatActivity {
     // UI elements
     private TextView mName;
     private TextView mUid;
+    private TextView mBalance;
 
     // Other members
     private Firebase mFirebase;
@@ -27,6 +28,7 @@ public class AccountActivity extends AppCompatActivity {
         mName.setText(getIntent().getStringExtra("name"));
         mUid = (TextView)findViewById(R.id.uid);
         mUid.setText(getIntent().getStringExtra("uid"));
+        mBalance = (TextView)findViewById(R.id.balance);
 
         mFirebase = new Firebase("https://aadhaar-batua.firebaseio.com");
 
