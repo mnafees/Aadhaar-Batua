@@ -2,13 +2,8 @@ package org.aadhaar.batua;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Xml;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -23,24 +18,18 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Handler mHandler;
-    private TextView mName;
-    private TextView mUid;
-    private boolean mQrCodeScanned;
+    private IntentIntegrator mIntentIntegrator;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        mHandler = new Handler(getMainLooper());
-        mName = (TextView) findViewById(R.id.name);
-        mUid  = (TextView) findViewById(R.id.uid);
-
-        IntentIntegrator intentIntegrator = new IntentIntegrator(this);
-        intentIntegrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE_TYPES);
-        intentIntegrator.setOrientationLocked(false);
-        intentIntegrator.initiateScan();
+        mIntentIntegrator = new IntentIntegrator(this);
+        mIntentIntegrator.setCaptureActivity(CaptureActivityAnyOrientation.class);
+        mIntentIntegrator.setPrompt("Scan your Aadhaar QR code");
+        mIntentIntegrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE_TYPES);
+        mIntentIntegrator.setOrientationLocked(false);
+        mIntentIntegrator.initiateScan();
     }
 
     @Override
@@ -56,59 +45,31 @@ public class MainActivity extends AppCompatActivity {
                 parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
                 parser.setInput(stream, null);
                 parser.nextTag();
+                if (!parser.getName().equals("PrintLetterBarcodeData")) {
+                    // not an Aadhaar QR Code
+                    mIntentIntegrator.initiateScan();
+                    return;
+                }
                 String uid = parser.getAttributeValue(null, "uid");
-                final String name = parser.getAttributeValue(null, "name");
-                String gender = parser.getAttributeValue(null, "gender");
-                String yob = parser.getAttributeValue(null, "yob");
-                String co = parser.getAttributeValue(null, "co");
-                String house = parser.getAttributeValue(null, "house");
-                String lm = parser.getAttributeValue(null, "lm");
-                String loc = parser.getAttributeValue(null, "loc");
-                String vtc = parser.getAttributeValue(null, "vtc");
-                String dist = parser.getAttributeValue(null, "dist");
-                String subdist = parser.getAttributeValue(null, "subdist");
-                String state = parser.getAttributeValue(null, "state");
-                String pc = parser.getAttributeValue(null, "pc");
-                mName.setText(name);
-                mUid.setText(uid);
+                String name = parser.getAttributeValue(null, "name");
+
+                Intent accountIntent = new Intent(this, AccountActivity.class);
+                accountIntent.putExtra("uid", uid);
+                accountIntent.putExtra("name", name);
+                startActivity(accountIntent);
+                finish();
             } catch(XmlPullParserException xppe) {
-                throw new IllegalStateException(xppe);
+                mIntentIntegrator.initiateScan();
             } catch (IOException ioe) {
-                throw new IllegalStateException(ioe);
+                mIntentIntegrator.initiateScan();
             } finally {
                 try {
                     stream.close();
                 } catch (IOException ioe) {
-                    throw new IllegalStateException(ioe);
+                    mIntentIntegrator.initiateScan();
                 }
             }
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
-    }
 }
