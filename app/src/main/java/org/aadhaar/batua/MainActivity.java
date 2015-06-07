@@ -14,14 +14,13 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
 
     private IntentIntegrator mIntentIntegrator;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mIntentIntegrator = new IntentIntegrator(this);
@@ -33,7 +32,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (resultCode == RESULT_CANCELED) {
+            return;
+        }
         final IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
         if (scanResult != null) {
             // handle scan result
@@ -41,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             InputStream stream = null;
             try {
                 parser = Xml.newPullParser();
-                stream = new ByteArrayInputStream(scanResult.getContents().getBytes(StandardCharsets.UTF_8));
+                stream = new ByteArrayInputStream(scanResult.getContents().getBytes("UTF-8"));
                 parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
                 parser.setInput(stream, null);
                 parser.nextTag();
@@ -52,10 +54,15 @@ public class MainActivity extends AppCompatActivity {
                 }
                 String uid = parser.getAttributeValue(null, "uid");
                 String name = parser.getAttributeValue(null, "name");
+                String pincode = parser.getAttributeValue(null, "pc");
+                User user = User.newUser()
+                        .setUid(uid)
+                        .setName(name)
+                        .setPincode(pincode)
+                        .create();
+                ((AadhaarBatuaApplication)getApplication()).setUser(user);
 
                 Intent accountIntent = new Intent(this, AccountActivity.class);
-                accountIntent.putExtra("uid", uid);
-                accountIntent.putExtra("name", name);
                 startActivity(accountIntent);
                 finish();
             } catch(XmlPullParserException xppe) {
@@ -64,7 +71,9 @@ public class MainActivity extends AppCompatActivity {
                 mIntentIntegrator.initiateScan();
             } finally {
                 try {
-                    stream.close();
+                    if (stream != null) {
+                        stream.close();
+                    }
                 } catch (IOException ioe) {
                     mIntentIntegrator.initiateScan();
                 }
