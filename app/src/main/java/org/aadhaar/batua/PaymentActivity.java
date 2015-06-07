@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -64,7 +65,7 @@ public class PaymentActivity extends AppCompatActivity {
         mReceiverName = (TextView)findViewById(R.id.receiver_name);
         mReceiverName.setText(receiver.getName());
         mReceiverUid = (TextView)findViewById(R.id.receiver_uid);
-        mReceiverUid.setText("********" + receiver.getUid().substring(receiver.getUid().length() - 4));
+        mReceiverUid.setText("********" + receiver.getUid().substring(receiver.getUid().length() - 5));
         mReceiverAmount = (TextView)findViewById(R.id.receiver_amount);
         mReceiverAmount.setText("\u20B9" + getIntent().getStringExtra("receiverAmount"));
         mFutureBalance = (TextView)findViewById(R.id.future_balance);
@@ -94,18 +95,27 @@ public class PaymentActivity extends AppCompatActivity {
                         .setCallback(new FutureCallback<Response<JsonObject>>() {
                             @Override
                             public void onCompleted(Exception e, Response<JsonObject> result) {
+                                Log.d("response", result.getResult().toString());
                                 if (result.getHeaders().code() == 200) {
-                                    mProgressDialog.hide();
-                                    Toast.makeText(PaymentActivity.this, "Thank you! Your transaction has been successfully completed", Toast.LENGTH_LONG)
-                                            .show();
-                                    mFirebase.child(receiver.getUid()).child("balance").setValue(
-                                            receiver.getBalance() +
-                                                    Integer.parseInt(getIntent().getStringExtra("receiverAmount"))
-                                    );
-                                    mFirebase.child(AadhaarBatuaApplication.getInstance().getUser().getUid()).child("balance").setValue(
-                                            Long.parseLong(getIntent().getStringExtra("futureBalance"))
-                                    );
-                                    finish();
+                                    if (result.getResult().has("success")) {
+                                        if (result.getResult().get("success").getAsBoolean()) {
+                                            mProgressDialog.hide();
+                                            Toast.makeText(PaymentActivity.this, "Thank you! Your transaction has been successfully completed", Toast.LENGTH_LONG)
+                                                    .show();
+                                            mFirebase.child(receiver.getUid()).child("balance").setValue(
+                                                    receiver.getBalance() +
+                                                            Integer.parseInt(getIntent().getStringExtra("receiverAmount"))
+                                            );
+                                            mFirebase.child(AadhaarBatuaApplication.getInstance().getUser().getUid()).child("balance").setValue(
+                                                    Long.parseLong(getIntent().getStringExtra("futureBalance"))
+                                            );
+                                            finish();
+                                        }
+                                    } else {
+                                        Toast.makeText(PaymentActivity.this, "Not a valid OTP", Toast.LENGTH_SHORT)
+                                                .show();
+                                    }
+
                                 } else {
                                     Toast.makeText(PaymentActivity.this, "Not a valid OTP", Toast.LENGTH_SHORT)
                                             .show();
